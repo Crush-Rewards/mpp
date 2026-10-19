@@ -466,6 +466,45 @@ describe("remarkMppMarkdown", () => {
     expect(tree.children[0].attributes).toEqual([src, alt, dynamic]);
   });
 
+  it("unwraps layout divs without flattening nested section headings", () => {
+    const section = {
+      children: [{ type: "text", value: "Framework mode" }],
+      depth: 2,
+      type: "heading",
+    };
+    const tree = transform([
+      section,
+      flow(
+        "div",
+        [attribute("className", "space-y-4")],
+        [
+          flow(
+            "Tabs",
+            [],
+            [
+              flow(
+                "Tab",
+                [attribute("title", "npm")],
+                [paragraph([{ type: "text", value: "Install with npm." }])],
+              ),
+            ],
+          ),
+        ],
+      ),
+      flow("div", [attribute("className", "h-2")]),
+    ]);
+
+    expect(tree.children).toEqual([
+      section,
+      {
+        children: [{ type: "text", value: "npm" }],
+        depth: 3,
+        type: "heading",
+      },
+      paragraph([{ type: "text", value: "Install with npm." }]),
+    ]);
+  });
+
   it("rejects missing or incomplete blog metadata", () => {
     const missing = { children: [flow("BlogPostList")], type: "root" };
     expect(() => remarkMppMarkdown()(missing)).toThrow(TypeError);
